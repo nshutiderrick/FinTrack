@@ -1,0 +1,8 @@
+# ET Capture: same receipt on black, so the two apps are easy to tell apart.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icon/icon_capture.png
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: assets/icon/foreground_capture.png
+  adaptive_icon_monochrome: assets/icon/foreground_capture.png

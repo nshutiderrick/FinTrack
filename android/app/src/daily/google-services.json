@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "399136486751",
+    "project_id": "finance-tracker-c9664",
+    "storage_bucket": "finance-tracker-c9664.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:399136486751:android:c96eed4b2ec253c6d5b2ea",
+        "android_client_info": {
+          "package_name": "dev.personal.expense_tracker.daily"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "399136486751-8bmmij2ba6hmg0qvsomdpdb4hrtme74m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "dev.personal.expense_tracker.daily",
+            "certificate_hash": "7a8d033cc3f388a32dfdb87025056887e8fc0874"
+          }
+        },
+        {
+          "client_id": "399136486751-5hmmiq2l2c9eqjcnhaimp48h6os5dq7g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCd6ARNc0E22p0RlfTwPYPVUV3dqPenHi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "399136486751-5hmmiq2l2c9eqjcnhaimp48h6os5dq7g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

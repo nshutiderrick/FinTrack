@@ -1,0 +1,8 @@
+# Expense Tracker (daily app): receipt on brand green. Images from tool/make_icons.py.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icon/icon_daily.png
+  adaptive_icon_background: "#024944"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  adaptive_icon_monochrome: assets/icon/foreground.png
