@@ -29,6 +29,19 @@ void main() {
     expect(find.text('Reports'), findsNWidgets(2)); // tab label + page title
   });
 
+  testWidgets('the bell on every tab opens the notifications page', (tester) async {
+    await tester.pumpWidget(ExpenseTrackerApp(settings: await freshSettings()));
+    await tester.pumpAndSettle();
+    for (final tab in [Icons.home_outlined, Icons.error_outline, Icons.bar_chart, Icons.event_repeat, Icons.receipt_long]) {
+      await tester.tap(find.byIcon(tab));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.notifications_outlined), findsOneWidget);
+    }
+    await tester.tap(find.byIcon(Icons.notifications_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing needs you right now.'), findsOneWidget);
+  });
+
   testWidgets('eye button hides amounts and is remembered', (tester) async {
     final settings = await freshSettings();
     await tester.pumpWidget(ExpenseTrackerApp(settings: settings));

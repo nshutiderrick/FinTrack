@@ -36,6 +36,8 @@ class _TxDetailScreenState extends State<TxDetailScreen> {
     try {
       final photo = await (widget.uploader ?? CloudinaryUploader()).upload(bytes);
       c.setPhoto(widget.id, photo.secureUrl, photo.publicId);
+    } on PhotoTooLarge {
+      messenger.showSnackBar(const SnackBar(content: Text('That photo is over 5 MB. Pick a smaller one.')));
     } catch (e) {
       messenger.showSnackBar(const SnackBar(content: Text('Photo upload failed. Check the connection and try again.')));
     } finally {

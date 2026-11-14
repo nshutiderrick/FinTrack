@@ -34,4 +34,17 @@ void main() {
       throwsA(isA<CloudinaryException>().having((e) => e.message, 'message', contains('whitelisted'))),
     );
   });
+
+  test('a photo over 5 MB is refused before anything is sent', () async {
+    var sent = false;
+    final client = MockClient((_) async {
+      sent = true;
+      return http.Response('{}', 200);
+    });
+    await expectLater(
+      CloudinaryUploader(client: client).upload(Uint8List(CloudinaryUploader.maxBytes + 1)),
+      throwsA(isA<PhotoTooLarge>()),
+    );
+    expect(sent, isFalse);
+  });
 }

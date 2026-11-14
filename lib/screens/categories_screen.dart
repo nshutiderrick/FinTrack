@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/ledger_controller.dart';
 
-/// Add and rename categories. A rename also changes past transactions.
+/// Add, rename and delete categories. A rename also changes past
+/// transactions; only an unused category can be deleted.
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
@@ -44,18 +45,30 @@ class CategoriesScreen extends StatelessWidget {
             ]),
           ),
           for (final cat in items)
-            ListTile(
-              title: Text(cat),
-              trailing: IconButton(
-                tooltip: 'Rename',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () async {
-                  final name = await _ask(context, 'Rename category', initial: cat);
-                  if (name == null || name.isEmpty || name == cat) return;
-                  c.renameCategory(cat, name, income: income);
-                },
-              ),
-            ),
+            Builder(builder: (context) {
+              final uses = c.categoryUses(cat, income: income);
+              return ListTile(
+                title: Text(cat),
+                subtitle: Text(uses == 0 ? 'Not used' : '$uses transaction${uses == 1 ? '' : 's'}'),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(
+                    tooltip: 'Rename',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () async {
+                      final name = await _ask(context, 'Rename category', initial: cat);
+                      if (name == null || name.isEmpty || name == cat) return;
+                      c.renameCategory(cat, name, income: income);
+                    },
+                  ),
+                  // A used category can only be renamed, so its transactions keep one.
+                  IconButton(
+                    tooltip: uses == 0 ? 'Delete' : 'In use, rename it instead',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: uses > 0 ? null : () => c.deleteCategory(cat, income: income),
+                  ),
+                ]),
+              );
+            }),
         ];
 
     return Scaffold(

@@ -504,6 +504,7 @@ class LedgerController extends ChangeNotifier {
     required Cycle cycle,
     required Provider account,
     required DateTime nextRenewal,
+    DateTime? paidFrom,
   }) =>
       store.addIn(
         LedgerStore.subscriptions,
@@ -516,6 +517,7 @@ class LedgerController extends ChangeNotifier {
           amount: amount,
           account: account,
           firstRenewal: nextRenewal,
+          paidFrom: paidFrom,
         ).toMap(),
       );
 
@@ -533,6 +535,19 @@ class LedgerController extends ChangeNotifier {
 
   void setCategories({required bool income, required List<String> list}) =>
       _write(store.saveProfile({income ? 'incomeCategories' : 'expenseCategories': list}));
+
+  /// How many transactions have this category.
+  int categoryUses(String name, {required bool income}) {
+    final dir = income ? Direction.inflow : Direction.outflow;
+    return _records.values.where((r) => r.category == name && r.message.direction == dir).length;
+  }
+
+  /// Only an unused category can go; a used one can only be renamed.
+  void deleteCategory(String name, {required bool income}) {
+    if (categoryUses(name, income: income) > 0) return;
+    final list = income ? incomeCategories : expenseCategories;
+    setCategories(income: income, list: [for (final c in list) if (c != name) c]);
+  }
 
   /// Renames the category and every transaction that already has it.
   void renameCategory(String from, String to, {required bool income}) {

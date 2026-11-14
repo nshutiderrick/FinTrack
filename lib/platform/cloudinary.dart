@@ -13,6 +13,11 @@ class UploadedPhoto {
   final String publicId;
 }
 
+/// More than [CloudinaryUploader.maxBytes]; nothing was sent.
+class PhotoTooLarge implements Exception {
+  const PhotoTooLarge();
+}
+
 class CloudinaryException implements Exception {
   const CloudinaryException(this.statusCode, this.message);
   final int statusCode;
@@ -31,7 +36,11 @@ class CloudinaryUploader {
   final String cloudName;
   final String preset;
 
+  /// The largest photo the app sends.
+  static const maxBytes = 5 * 1024 * 1024;
+
   Future<UploadedPhoto> upload(Uint8List bytes, {String filename = 'photo.jpg'}) async {
+    if (bytes.length > maxBytes) throw const PhotoTooLarge();
     final request = http.MultipartRequest('POST', Uri.https('api.cloudinary.com', '/v1_1/$cloudName/image/upload'))
       ..fields['upload_preset'] = preset
       ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
@@ -46,9 +55,10 @@ class CloudinaryUploader {
   }
 }
 
-/// Camera or gallery, shrunk on the phone to roughly 200 KB before upload.
+/// Camera or gallery, shrunk on the phone (longest side 1600 px) to well
+/// under the 5 MB upload limit before upload.
 Future<Uint8List?> pickExpensePhoto(ImageSource source) async {
   expectExternal();
-  final file = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 70);
+  final file = await ImagePicker().pickImage(source: source, maxWidth: 1600, maxHeight: 1600, imageQuality: 70);
   return file?.readAsBytes();
 }

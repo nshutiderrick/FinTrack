@@ -6,6 +6,8 @@ import '../data/ledger_controller.dart';
 import '../settings.dart';
 import '../widgets/amount.dart';
 import '../widgets/tx_widgets.dart';
+import '../widgets/glass.dart';
+import '../widgets/page_header.dart';
 import 'subscriptions_screen.dart';
 import 'tx_detail_screen.dart';
 
@@ -15,17 +17,10 @@ class DuesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
       child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(children: [
-            Expanded(child: Text('Dues', style: theme.textTheme.headlineMedium)),
-            const HideAmountsButton(),
-          ]),
-        ),
+        const PageHeader('Dues'),
         const TabBar(tabs: [Tab(text: 'Loans'), Tab(text: 'Subscriptions')]),
         const Expanded(child: TabBarView(children: [LoansScreen(), SubscriptionsScreen()])),
       ]),
@@ -52,11 +47,14 @@ class _LoansScreenState extends State<LoansScreen> {
     final theme = Theme.of(context);
     final overdue = book.overdueCount(now);
     return Scaffold(
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'addLoan',
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddLoanScreen())),
-          icon: const Icon(Icons.add),
-          label: const Text('Add loan'),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: kBottomBarClearance),
+          child: FloatingActionButton.extended(
+            heroTag: 'addLoan',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddLoanScreen())),
+            icon: const Icon(Icons.add),
+            label: const Text('Add loan'),
+          ),
         ),
         body: Column(children: [
           const SizedBox(height: 12),

@@ -39,6 +39,7 @@ class SubRecord {
     this.currency = 'RWF',
     this.account,
     this.firstRenewal,
+    this.paidFrom,
   });
 
   final String id, name;
@@ -54,6 +55,9 @@ class SubRecord {
   /// Next renewal I typed in, for one with no payments found yet.
   final DateTime? firstRenewal;
 
+  /// When the period I paid for (one or more cycles) started, for one added by hand.
+  final DateTime? paidFrom;
+
   Map<String, Object?> toMap() => {
         'name': name,
         'key': key,
@@ -63,6 +67,7 @@ class SubRecord {
         'currency': currency,
         'account': account?.name,
         'firstRenewal': firstRenewal?.millisecondsSinceEpoch,
+        'paidFrom': paidFrom?.millisecondsSinceEpoch,
       };
 
   static SubRecord fromMap(String id, Map<String, Object?> m) => SubRecord(
@@ -75,6 +80,7 @@ class SubRecord {
         currency: m['currency'] as String? ?? 'RWF',
         account: m['account'] == null ? null : Provider.values.byName(m['account'] as String),
         firstRenewal: m['firstRenewal'] == null ? null : DateTime.fromMillisecondsSinceEpoch(m['firstRenewal'] as int),
+        paidFrom: m['paidFrom'] == null ? null : DateTime.fromMillisecondsSinceEpoch(m['paidFrom'] as int),
       );
 }
 
@@ -115,10 +121,36 @@ class Subscription {
     return currency == 'RWF' ? record?.amount : null;
   }
 
+  /// When what was paid runs out: a cycle after the last payment, or later
+  /// when I said I paid several cycles ahead.
   DateTime? get nextRenewal {
     final p = lastPaid;
-    if (p == null) return record?.firstRenewal;
-    return cycle.after(p);
+    final typed = record?.firstRenewal;
+    if (p == null) return typed;
+    final fromPayment = cycle.after(p);
+    return typed != null && typed.isAfter(fromPayment) ? typed : fromPayment;
+  }
+
+  /// Start of the period that [nextRenewal] ends.
+  DateTime? get _paidFrom {
+    final p = lastPaid;
+    final typed = record?.firstRenewal;
+    if (p != null && (typed == null || !typed.isAfter(cycle.after(p)))) return p;
+    return record?.paidFrom;
+  }
+
+  /// When to remind me, at 9:00: a day before it runs out, and also a month
+  /// before when more than a month was paid for.
+  List<DateTime> get reminders {
+    final end = nextRenewal;
+    if (end == null || status != SubStatus.active) return const [];
+    final dayBefore = DateTime(end.year, end.month, end.day - 1, 9);
+    final daysInPrevMonth = DateTime(end.year, end.month, 0).day;
+    final monthBefore = DateTime(end.year, end.month - 1, end.day > daysInPrevMonth ? daysInPrevMonth : end.day, 9);
+    final from = _paidFrom;
+    // Paid on that very day means one month only, so no early reminder.
+    final paidLonger = from != null && from.isBefore(DateTime(monthBefore.year, monthBefore.month, monthBefore.day));
+    return [if (paidLonger) monthBefore, dayBefore];
   }
 
   /// A charge failed after the last successful one (card had no money).

@@ -15,12 +15,15 @@ plugins {
 
 android {
     namespace = "dev.personal.expense_tracker"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications needs 37.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Scheduled reminders (flutter_local_notifications) need it.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -88,6 +91,7 @@ android {
 dependencies {
     // Reads statement PDFs on the phone (Apache 2.0).
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 kotlin {

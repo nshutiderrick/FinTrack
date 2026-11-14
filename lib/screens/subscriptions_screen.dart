@@ -6,6 +6,7 @@ import '../data/ledger_controller.dart';
 import '../settings.dart';
 import '../widgets/amount.dart';
 import '../widgets/tx_widgets.dart';
+import '../widgets/glass.dart';
 import 'tx_detail_screen.dart';
 
 /// What I pay for regularly, and when it renews (spec: Subscriptions).
@@ -21,11 +22,14 @@ class SubscriptionsScreen extends StatelessWidget {
     Widget header(String t) => Padding(padding: const EdgeInsets.fromLTRB(16, 20, 16, 4), child: Text(t, style: theme.textTheme.titleMedium));
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'addSubscription',
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddSubscriptionScreen())),
-        icon: const Icon(Icons.add),
-        label: const Text('Add subscription'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: kBottomBarClearance),
+        child: FloatingActionButton.extended(
+          heroTag: 'addSubscription',
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddSubscriptionScreen())),
+          icon: const Icon(Icons.add),
+          label: const Text('Add subscription'),
+        ),
       ),
       // The second tab of Dues, which has the page title.
       body: ListView(padding: const EdgeInsets.only(bottom: 120), children: [
@@ -211,7 +215,22 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   final _amount = TextEditingController();
   Cycle _cycle = Cycle.monthly;
   Provider _account = Provider.mtn;
-  DateTime _next = DateTime.now().add(const Duration(days: 30));
+  final _periods = TextEditingController(text: '1');
+  DateTime _paidOn = DateTime.now();
+
+  /// How many cycles I paid for at once (1 to 120).
+  int? get _count {
+    final v = int.tryParse(_periods.text.trim());
+    return v == null || v < 1 || v > 120 ? null : v;
+  }
+
+  DateTime get _expires {
+    var d = DateTime(_paidOn.year, _paidOn.month, _paidOn.day);
+    for (var i = 0; i < (_count ?? 1); i++) {
+      d = _cycle.after(d);
+    }
+    return d;
+  }
 
   int? get _minor {
     final v = int.tryParse(_amount.text.replaceAll(RegExp(r'[ ,]'), ''));
@@ -220,7 +239,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave = _name.text.trim().isNotEmpty && _minor != null;
+    final canSave = _name.text.trim().isNotEmpty && _minor != null && _count != null;
+    final unit = switch (_cycle) { Cycle.weekly => 'Weeks', Cycle.monthly => 'Months', Cycle.yearly => 'Years' };
+    final end = _expires;
+    final monthAhead = DateTime(end.year, end.month - 1, end.day).isAfter(_paidOn);
     return Scaffold(
       appBar: AppBar(title: const Text('Add subscription')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
@@ -249,15 +271,27 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         ]),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Next renewal'),
-          subtitle: Text(dateLabel(_next, withTime: false)),
+          title: const Text('Paid on'),
+          subtitle: Text(dateLabel(_paidOn, withTime: false)),
           trailing: TextButton(
             onPressed: () async {
-              final d = await showDatePicker(context: context, initialDate: _next, firstDate: DateTime(2020), lastDate: DateTime(2100));
-              if (d != null) setState(() => _next = d);
+              final d = await showDatePicker(context: context, initialDate: _paidOn, firstDate: DateTime(2020), lastDate: DateTime(2100));
+              if (d != null) setState(() => _paidOn = d);
             },
             child: const Text('Change'),
           ),
+        ),
+        TextField(
+          controller: _periods,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: '$unit paid',
+            border: const OutlineInputBorder(),
+            errorText: _count == null ? 'Enter a number from 1 to 120' : null,
+            helperText: 'Runs out ${dateLabel(end, withTime: false)}. '
+                'Reminder a day before${monthAhead ? ' and a month before' : ''}.',
+          ),
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 24),
         FilledButton(
@@ -265,7 +299,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               ? null
               : () {
                   LedgerScope.of(context).addSubscription(
-                      name: _name.text.trim(), amount: _minor!, cycle: _cycle, account: _account, nextRenewal: _next);
+                      name: _name.text.trim(), amount: _minor!, cycle: _cycle, account: _account, nextRenewal: end, paidFrom: _paidOn);
                   Navigator.of(context).pop();
                 },
           child: const Text('Save'),

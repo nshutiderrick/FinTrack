@@ -5,9 +5,10 @@ import '../core/tx_query.dart';
 import '../data/ledger_controller.dart';
 import '../settings.dart';
 import '../widgets/amount.dart';
+import '../widgets/page_header.dart';
 import '../widgets/tx_widgets.dart';
 
-/// Every transaction: expenses, income and transfers between my accounts.
+/// Activity, every transaction: expenses, income and transfers between my accounts.
 /// Sort by date, amount or name either way, and filter by category.
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -101,95 +102,123 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Transactions'), actions: const [HideAmountsButton()]),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search names and descriptions',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => setState(() => _search = v),
-            ),
+    final scheme = theme.colorScheme;
+    Widget flow(IconData icon, String label, int amount, Color color) => Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(color: muted, fontSize: 12)),
+              Amount(amount, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            ],
           ),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: AccountFilterBar()),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<TxSort>(
-                    initialValue: _sort,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Sort', isDense: true, border: OutlineInputBorder()),
-                    items: [for (final s in TxSort.values) DropdownMenuItem(value: s, child: Text(s.label))],
-                    onChanged: (s) => setState(() => _sort = s ?? _sort),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                  onPressed: () => _pickCategories(all),
-                  icon: const Icon(Icons.filter_list),
-                  label: Text(_groups.isEmpty ? 'Categories' : '${_groups.length} chosen'),
-                ),
-              ],
+        ),
+      ],
+    );
+    final summary = Card(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${list.length} transaction${list.length == 1 ? '' : 's'}',
+              style: theme.textTheme.titleSmall?.copyWith(color: muted),
             ),
-          ),
-          if (_groups.isNotEmpty)
-            SizedBox(
-              height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            const SizedBox(height: 12),
+            IntrinsicHeight(
+              child: Row(
                 children: [
-                  for (final g in _groups)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8, top: 8),
-                      child: InputChip(label: Text(g), onDeleted: () => setState(() => _groups.remove(g))),
-                    ),
+                  Expanded(child: flow(Icons.south_west, 'Money in', moneyIn, scheme.secondary)),
+                  VerticalDivider(width: 24, color: scheme.outlineVariant),
+                  Expanded(child: flow(Icons.north_east, 'Money out', moneyOut, scheme.primary)),
                 ],
               ),
             ),
-          Expanded(
-            child: list.isEmpty
-                ? Center(
-                    child: Text('Nothing matches.', style: TextStyle(color: muted)),
-                  )
-                // The count and totals are the first item, so they scroll away with the list.
-                : ListView.builder(
-                    itemCount: list.length + 1,
-                    itemBuilder: (_, i) => i > 0
-                        ? TxTile(list[i - 1])
-                        : Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${list.length} transaction${list.length == 1 ? '' : 's'}',
-                                  style: TextStyle(color: muted),
-                                ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Text('In ', style: TextStyle(color: muted)),
-                                    Amount(moneyIn, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                    Text('     Out ', style: TextStyle(color: muted)),
-                                    Amount(moneyOut, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+          ],
+        ),
+      ),
+    );
+
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            const PageHeader('Activity'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search names and descriptions',
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (v) => setState(() => _search = v),
+              ),
+            ),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: AccountFilterBar()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<TxSort>(
+                      initialValue: _sort,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Sort', isDense: true, border: OutlineInputBorder()),
+                      items: [for (final s in TxSort.values) DropdownMenuItem(value: s, child: Text(s.label))],
+                      onChanged: (s) => setState(() => _sort = s ?? _sort),
+                    ),
                   ),
-          ),
-        ],
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                    onPressed: () => _pickCategories(all),
+                    icon: const Icon(Icons.filter_list),
+                    label: Text(_groups.isEmpty ? 'Categories' : '${_groups.length} chosen'),
+                  ),
+                ],
+              ),
+            ),
+            if (_groups.isNotEmpty)
+              SizedBox(
+                height: 48,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    for (final g in _groups)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8, top: 8),
+                        child: InputChip(label: Text(g), onDeleted: () => setState(() => _groups.remove(g))),
+                      ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: list.isEmpty
+                  ? Center(
+                      child: Text('Nothing matches.', style: TextStyle(color: muted)),
+                    )
+                  // The count and totals are the first item, so they scroll away with the list.
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 120),
+                      itemCount: list.length + 1,
+                      itemBuilder: (_, i) => i > 0 ? TxTile(list[i - 1]) : summary,
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

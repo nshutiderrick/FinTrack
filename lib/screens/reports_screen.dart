@@ -9,6 +9,7 @@ import '../data/ledger_controller.dart';
 import '../settings.dart';
 import '../widgets/amount.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_header.dart';
 import '../widgets/tx_widgets.dart';
 
 /// Income and spending for a day, week, month, year or custom range, for all
@@ -59,90 +60,105 @@ class _ReportsScreenState extends State<ReportsScreen> {
     };
 
     return GlassBackdrop(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(child: Text('Reports', style: theme.textTheme.headlineMedium)),
-              const HideAmountsButton(),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Period and account as drop-downs; the arrows below step through periods.
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<PeriodKind>(
-                  key: ValueKey(_period.kind),
-                  initialValue: _period.kind,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Period', isDense: true, border: OutlineInputBorder()),
-                  items: [for (final e in kinds.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
-                  onChanged: (k) {
-                    if (k != null) _setKind(k);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<Provider?>(
-                  key: ValueKey(account),
-                  initialValue: account,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Account', isDense: true, border: OutlineInputBorder()),
-                  items: [
-                    DropdownMenuItem(value: null, child: Text(settings.hidden.isEmpty ? 'All accounts' : 'All shown')),
-                    for (final p in settings.visibleAccounts) DropdownMenuItem(value: p, child: Text(p.short)),
-                  ],
-                  onChanged: (p) => settings.account = p,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Previous',
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () => setState(() => _period = _period.shift(-1)),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: _period.kind == PeriodKind.custom ? () => _setKind(PeriodKind.custom) : null,
-                  child: Text(_period.label, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Next',
-                icon: const Icon(Icons.chevron_right),
-                onPressed: isFuture ? null : () => setState(() => _period = _period.shift(1)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _TotalsCard(t, oneAccount: account != null || settings.hidden.isNotEmpty),
-          const SizedBox(height: 16),
-          _section(context, 'Top spending'),
-          _CategoryList(t.topSpending, total: t.spent, empty: 'No confirmed spending in this period.'),
-          const SizedBox(height: 16),
-          _section(context, 'Top income'),
-          _CategoryList(t.topIncome, total: t.income, empty: 'No confirmed income in this period.'),
-          const SizedBox(height: 16),
-          _section(context, 'Trend'),
-          _TrendChart(report.trend),
-          const SizedBox(height: 16),
-          _section(context, 'By account'),
-          Card(
-            child: Column(
+          const PageHeader('Reports'),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
               children: [
-                if (report.byAccount.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Nothing yet.', style: TextStyle(color: muted)),
+                // Period and account as drop-downs; the arrows below step through periods.
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<PeriodKind>(
+                        key: ValueKey(_period.kind),
+                        initialValue: _period.kind,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Period',
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [for (final e in kinds.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                        onChanged: (k) {
+                          if (k != null) _setKind(k);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<Provider?>(
+                        key: ValueKey(account),
+                        initialValue: account,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Account',
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(settings.hidden.isEmpty ? 'All accounts' : 'All shown'),
+                          ),
+                          for (final p in settings.visibleAccounts) DropdownMenuItem(value: p, child: Text(p.short)),
+                        ],
+                        onChanged: (p) => settings.account = p,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Previous',
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () => setState(() => _period = _period.shift(-1)),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: _period.kind == PeriodKind.custom ? () => _setKind(PeriodKind.custom) : null,
+                        child: Text(_period.label, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Next',
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: isFuture ? null : () => setState(() => _period = _period.shift(1)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _TotalsCard(t, oneAccount: account != null || settings.hidden.isNotEmpty),
+                const SizedBox(height: 16),
+                _section(context, 'Top spending'),
+                _CategoryList(t.topSpending, total: t.spent, empty: 'No confirmed spending in this period.'),
+                const SizedBox(height: 16),
+                _section(context, 'Top income'),
+                _CategoryList(t.topIncome, total: t.income, empty: 'No confirmed income in this period.'),
+                const SizedBox(height: 16),
+                _section(context, 'Trend'),
+                // A new period starts with nothing picked.
+                _TrendChart(report.trend, key: ValueKey('${_period.label} $account')),
+                const SizedBox(height: 16),
+                _section(context, 'By account'),
+                Card(
+                  child: Column(
+                    children: [
+                      if (report.byAccount.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text('Nothing yet.', style: TextStyle(color: muted)),
+                        ),
+                      for (final (i, a) in report.byAccount.indexed) ...[
+                        if (i > 0) const Divider(height: 1),
+                        _AccountRow(a),
+                      ],
+                    ],
                   ),
-                for (final a in report.byAccount) ...[_AccountRow(a), const Divider(height: 1)],
+                ),
               ],
             ),
           ),
@@ -305,18 +321,26 @@ class _CategoryTxs extends StatelessWidget {
   }
 }
 
-/// Income and spending as two lines, one point per day (or month for a
-/// year). Scrolls sideways; touching a point shows that day's figures.
-class _TrendChart extends StatelessWidget {
-  const _TrendChart(this.points);
+/// Income and spending as two lines, one point per day, week or month.
+/// Scrolls sideways; touching a point shows its figures in a card above the
+/// chart, where the finger does not cover them.
+class _TrendChart extends StatefulWidget {
+  const _TrendChart(this.points, {super.key});
   final List<(String, Totals)> points;
 
+  @override
+  State<_TrendChart> createState() => _TrendChartState();
+}
+
+class _TrendChartState extends State<_TrendChart> {
   static const _pointWidth = 44.0;
+  int? _selected;
 
   @override
   Widget build(BuildContext context) {
+    final points = widget.points;
+    final sel = _selected != null && _selected! < points.length ? _selected : null;
     final scheme = Theme.of(context).colorScheme;
-    final hidden = SettingsScope.of(context).hideAmounts;
     final top = points.fold<int>(0, (m, b) => math.max(m, math.max(b.$2.spent, b.$2.income))) / 100;
     LineChartBarData line(int Function(Totals) v, Color color) => LineChartBarData(
       spots: [for (final (i, (_, t)) in points.indexed) FlSpot(i.toDouble(), v(t) / 100)],
@@ -326,8 +350,6 @@ class _TrendChart extends StatelessWidget {
       barWidth: 2.5,
       dotData: FlDotData(getDotPainter: (_, _, _, _) => FlDotCirclePainter(radius: 3, color: color, strokeWidth: 0)),
     );
-    String money(int v) => formatRwf(v, hidden: hidden);
-    final tip = TextStyle(color: scheme.onPrimary, fontSize: 12);
 
     final chart = LineChart(
       LineChartData(
@@ -360,61 +382,105 @@ class _TrendChart extends StatelessWidget {
             ),
           ),
         ),
+        // The picked point stays marked after the finger lifts.
+        extraLinesData: ExtraLinesData(
+          verticalLines: [
+            if (sel != null)
+              VerticalLine(x: sel.toDouble(), color: scheme.onSurfaceVariant, strokeWidth: 1, dashArray: [4, 4]),
+          ],
+        ),
         lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => scheme.primary,
-            fitInsideHorizontally: true,
-            fitInsideVertically: true,
-            // One box per touched day: the first line carries all of it.
-            getTooltipItems: (spots) => [
-              for (final (n, s) in spots.indexed)
-                n > 0
-                    ? null
-                    : LineTooltipItem(
-                        '${points[s.x.toInt()].$1}\n',
-                        tip.copyWith(fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.left,
-                        children: [
-                          TextSpan(text: 'Income ${money(points[s.x.toInt()].$2.income)}\n', style: tip),
-                          TextSpan(text: 'Expenses ${money(points[s.x.toInt()].$2.spent)}\n', style: tip),
-                          TextSpan(
-                            text: 'Net ${formatRwf(points[s.x.toInt()].$2.net, hidden: hidden, signed: true)}',
-                            style: tip,
-                          ),
-                        ],
-                      ),
-            ],
-          ),
+          touchCallback: (_, response) {
+            final spots = response?.lineBarSpots;
+            if (spots == null || spots.isEmpty) return;
+            final i = spots.first.x.toInt();
+            if (i != _selected) setState(() => _selected = i);
+          },
+          // The figures go in the card above instead of a box on the chart.
+          touchTooltipData: LineTouchTooltipData(getTooltipItems: (spots) => [for (final _ in spots) null]),
         ),
         lineBarsData: [line((t) => t.income, scheme.secondary), line((t) => t.spent, scheme.primary)],
       ),
     );
 
-    return Glass(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 16, 8, 12),
-        child: Column(
-          children: [
-            LayoutBuilder(
-              builder: (context, box) => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                reverse: true, // start at the latest day
-                child: SizedBox(width: math.max(box.maxWidth, points.length * _pointWidth), height: 180, child: chart),
+    final muted = scheme.onSurfaceVariant;
+    Widget figure(String label, int v, {bool signed = false}) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(color: muted, fontSize: 12)),
+          Amount(
+            v,
+            signed: signed,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+    final details = sel == null
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text(
+              'Touch the chart to see the figures for a point.',
+              style: TextStyle(color: muted, fontSize: 13),
+            ),
+          )
+        : Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(points[sel].$1, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      figure('Income', points[sel].$2.income),
+                      figure('Expenses', points[sel].$2.spent),
+                      figure('Net', points[sel].$2.net, signed: true),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        details,
+        Glass(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 12),
+            child: Column(
               children: [
-                Container(width: 14, height: 3, color: scheme.secondary),
-                const Text('  Income     '),
-                Container(width: 14, height: 3, color: scheme.primary),
-                const Text('  Expenses'),
+                LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: true, // start at the latest day
+                    child: SizedBox(
+                      width: math.max(box.maxWidth, points.length * _pointWidth),
+                      height: 180,
+                      child: chart,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(width: 14, height: 3, color: scheme.secondary),
+                    const Text('  Income     '),
+                    Container(width: 14, height: 3, color: scheme.primary),
+                    const Text('  Expenses'),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

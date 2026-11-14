@@ -2,6 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+/// Height of the floating bottom bar and its margin, for things that must
+/// sit above it (floating buttons) when a page runs on under it.
+const kBottomBarClearance = 80.0;
+
 /// Frosted glass: blurs what is behind it under a see-through tint with a
 /// light edge. [tint] defaults to the page background.
 class Glass extends StatelessWidget {
@@ -49,19 +53,25 @@ class GlassBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final green = Theme.of(context).colorScheme.secondary;
+    // Each shape fades out to nothing at its edge, so none looks cut out.
     Widget blob(double size, double alpha) => Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: green.withValues(alpha: alpha),
+        gradient: RadialGradient(
+          colors: [
+            green.withValues(alpha: alpha),
+            green.withValues(alpha: 0),
+          ],
+        ),
       ),
     );
     return Stack(
       children: [
-        Positioned(top: -60, right: -40, child: blob(220, 0.35)),
-        Positioned(top: 180, left: -70, child: blob(180, 0.25)),
-        Positioned(top: 420, right: -50, child: blob(160, 0.18)),
+        Positioned(top: -110, right: -90, child: blob(320, 0.30)),
+        Positioned(top: 140, left: -120, child: blob(280, 0.22)),
+        Positioned(top: 380, right: -100, child: blob(260, 0.16)),
         Positioned.fill(child: child),
       ],
     );

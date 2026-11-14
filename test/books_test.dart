@@ -1,6 +1,7 @@
 import 'package:expense_tracker/core/ledger.dart';
 import 'package:expense_tracker/core/loans.dart';
 import 'package:expense_tracker/core/models.dart';
+import 'package:expense_tracker/core/notices.dart';
 import 'package:expense_tracker/core/people.dart';
 import 'package:expense_tracker/core/subscriptions.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +169,55 @@ void main() {
       expect(s.failedRecently, isTrue);
       expect(s.missed(t0.add(const Duration(days: 40))), isTrue);
       expect(s.missed(t0.add(const Duration(days: 20))), isFalse);
+    });
+
+    test('reminders: a day before, and a month before when more than a month was paid', () {
+      SubRecord typed(DateTime from, DateTime until, {Cycle cycle = Cycle.monthly}) => SubRecord(
+            id: 'p', name: 'Gym', key: '', cycle: cycle, status: SubStatus.active, firstRenewal: until, paidFrom: from);
+      Subscription only(SubRecord r) => SubscriptionBook.build(const [], [r]).active.single;
+
+      final three = only(typed(DateTime(2026, 9, 1), DateTime(2026, 12, 1)));
+      expect(three.nextRenewal, DateTime(2026, 12, 1));
+      expect(three.reminders, [DateTime(2026, 11, 1, 9), DateTime(2026, 11, 30, 9)]);
+
+      final one = only(typed(DateTime(2026, 11, 1), DateTime(2026, 12, 1)));
+      expect(one.reminders, [DateTime(2026, 11, 30, 9)]);
+
+      // A month before 31 March is the last day of February.
+      expect(only(typed(DateTime(2025, 12, 31), DateTime(2026, 3, 31))).reminders.first, DateTime(2026, 2, 28, 9));
+
+      final cancelled = SubscriptionBook.build(const [], [
+        SubRecord(id: 'c', name: 'Old', key: '', cycle: Cycle.monthly, status: SubStatus.cancelled, firstRenewal: DateTime(2026, 12, 1)),
+      ]).cancelled.single;
+      expect(cancelled.reminders, isEmpty);
+    });
+
+    test('a prepaid period is not cut short by a payment found in the messages', () {
+      final list = txs([rec(msg(Provider.mtn, Kind.expense, Direction.outflow, 30000, who: 'GYM CLUB'))]);
+      final s = SubscriptionBook.build(list, [
+        SubRecord(
+            id: 'g', name: 'Gym club', key: 'GYM', cycle: Cycle.monthly, status: SubStatus.active,
+            firstRenewal: DateTime(t0.year, t0.month + 3, t0.day), paidFrom: t0),
+      ]).active.single;
+      expect(s.nextRenewal, DateTime(t0.year, t0.month + 3, t0.day));
+      expect(s.reminders, hasLength(2));
+    });
+  });
+
+  group('Notices', () {
+    test('a subscription running out soon and an overdue loan are listed, review first', () {
+      final now = DateTime(2026, 11, 14, 12);
+      final subs = SubscriptionBook.build(const [], [
+        SubRecord(id: 's', name: 'Gym', key: '', cycle: Cycle.monthly, status: SubStatus.active, firstRenewal: DateTime(2026, 11, 15)),
+        SubRecord(id: 'f', name: 'Far', key: '', cycle: Cycle.yearly, status: SubStatus.active, firstRenewal: DateTime(2027, 6, 1)),
+      ]);
+      final loans = LoanBook.build(const [], [
+        LoanRecord(id: 'l', side: LoanSide.owedToMe, person: 'Friend One', amount: 500000, createdAt: DateTime(2026, 10, 1), due: DateTime(2026, 11, 10)),
+      ]);
+      final n = buildNotices(subs: subs, loans: loans, reviewCount: 2, now: now);
+      expect(n.map((x) => x.title), ['Review', 'Friend One owes you', 'Gym']);
+      expect(n.last.body, 'Runs out tomorrow.');
+      expect(n[1].body, 'Was due 4 days ago.');
     });
   });
 

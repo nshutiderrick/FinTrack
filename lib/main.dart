@@ -6,6 +6,7 @@ import 'auth/auth_service.dart';
 import 'data/ledger_controller.dart';
 import 'data/ledger_store.dart';
 import 'firebase_options.dart';
+import 'platform/reminders.dart';
 import 'popup/popup_app.dart';
 import 'screens/home_screen.dart';
 import 'screens/loans_screen.dart';
@@ -86,11 +87,24 @@ class _ShellState extends State<Shell> {
     (Icons.error_outline, 'Review'),
     (Icons.bar_chart, 'Reports'),
     (Icons.event_repeat, 'Dues'),
-    (Icons.receipt_long, 'Transactions'),
+    (Icons.receipt_long, 'Activity'),
   ];
+
+  /// The reminders last handed to the phone, so they are only reset on a change.
+  String? _remindersFor;
+
+  void _syncReminders(LedgerController c) {
+    if (!c.loaded) return;
+    final subs = c.subscriptions.active;
+    final key = [for (final s in subs) '${s.record?.id ?? s.key} ${s.name} ${s.reminders}'].join('|');
+    if (key == _remindersFor) return;
+    _remindersFor = key;
+    Reminders.sync(subs);
+  }
 
   @override
   Widget build(BuildContext context) {
+    _syncReminders(LedgerScope.of(context));
     final reviewCount = visibleReviewCount(LedgerScope.of(context).ledger, SettingsScope.of(context));
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(

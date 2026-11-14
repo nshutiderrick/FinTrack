@@ -6,6 +6,7 @@ import '../data/ledger_controller.dart';
 import '../settings.dart';
 import '../widgets/amount.dart';
 import '../widgets/tx_widgets.dart';
+import '../widgets/page_header.dart';
 import 'manual_entry_screen.dart';
 
 /// Items to review on accounts that are shown. Hidden accounts' items wait and
@@ -30,19 +31,12 @@ class ReviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = LedgerScope.of(context);
-    final theme = Theme.of(context);
     final (mismatches, pending, unknown) = visibleReview(c.ledger, SettingsScope.of(context));
     final needs = pending.length + unknown.length;
     return DefaultTabController(
       length: 2,
       child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(children: [
-            Expanded(child: Text('Review', style: theme.textTheme.headlineMedium)),
-            const HideAmountsButton(),
-          ]),
-        ),
+        const PageHeader('Review'),
         TabBar(tabs: [
           Tab(text: needs == 0 ? 'Needs review' : 'Needs review ($needs)'),
           Tab(text: mismatches.isEmpty ? 'Mismatches' : 'Mismatches (${mismatches.length})'),
