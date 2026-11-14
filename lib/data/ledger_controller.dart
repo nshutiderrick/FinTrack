@@ -347,13 +347,24 @@ class LedgerController extends ChangeNotifier {
     required DateTime time,
     required String category,
     String? description,
+    String? name,
+    String? phone,
+    int fee = 0,
+    String? reference,
   }) {
+    String? clean(String? s) => s == null || s.trim().isEmpty ? null : s.trim();
+    // Amount and fee change the account's running balance like an alert would.
     final m = ParsedMessage(
       provider: account,
       kind: income ? Kind.income : Kind.expense,
       direction: income ? Direction.inflow : Direction.outflow,
       time: time,
       amount: amount,
+      fee: fee,
+      counterparty: clean(name),
+      isPerson: clean(name) != null,
+      phone: clean(phone),
+      reference: clean(reference),
     );
     store.add({
       ...TxRecord(id: '', source: TxSource.manual, message: m).parsedMap(),

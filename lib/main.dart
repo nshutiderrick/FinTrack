@@ -14,17 +14,20 @@ import 'screens/review_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'settings.dart';
 import 'theme.dart';
+import 'widgets/glass.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: AppFirebaseOptions.current);
   final settings = await AppSettings.load();
   final auth = AuthService();
-  runApp(ExpenseTrackerApp(
-    settings: settings,
-    home: AuthGate(auth: auth, signedIn: const Shell()),
-    ledger: (child) => UserLedger(auth: auth, child: child),
-  ));
+  runApp(
+    ExpenseTrackerApp(
+      settings: settings,
+      home: AuthGate(auth: auth, signedIn: const Shell()),
+      ledger: (child) => UserLedger(auth: auth, child: child),
+    ),
+  );
 }
 
 /// Entry point of the floating category pop-up. The alert listener starts it in
@@ -60,8 +63,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           darkTheme: buildTheme(Brightness.dark),
           themeMode: settings.themeMode,
           home: home,
-          builder: (context, child) =>
-              ledger?.call(child!) ?? LedgerHost(store: MemoryLedgerStore(), child: child!),
+          builder: (context, child) => ledger?.call(child!) ?? LedgerHost(store: MemoryLedgerStore(), child: child!),
         ),
       ),
     );
@@ -90,8 +92,12 @@ class _ShellState extends State<Shell> {
   @override
   Widget build(BuildContext context) {
     final reviewCount = visibleReviewCount(LedgerScope.of(context).ledger, SettingsScope.of(context));
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      // Pages scroll on under the floating bar, so its glass has something to blur.
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: switch (_tab) {
           0 => const HomeScreen(),
           1 => const ReviewScreen(),
@@ -100,17 +106,36 @@ class _ShellState extends State<Shell> {
           _ => const TransactionsScreen(),
         },
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: [
-          for (final (i, (icon, label)) in _tabs.indexed)
-            NavigationDestination(
-              icon: i == 1 && reviewCount > 0 ? Badge.count(count: reviewCount, child: Icon(icon)) : Icon(icon),
-              label: label,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 6)),
+            ],
+          ),
+          child: Glass(
+            radius: 32,
+            opacity: 0.6,
+            child: NavigationBar(
+              height: 68,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              selectedIndex: _tab,
+              onDestinationSelected: (i) => setState(() => _tab = i),
+              destinations: [
+                for (final (i, (icon, label)) in _tabs.indexed)
+                  NavigationDestination(
+                    icon: i == 1 && reviewCount > 0 ? Badge.count(count: reviewCount, child: Icon(icon)) : Icon(icon),
+                    label: label,
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
+      backgroundColor: scheme.surface,
     );
   }
 }

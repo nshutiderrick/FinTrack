@@ -16,29 +16,32 @@ class Period {
     return switch (kind) {
       PeriodKind.day || PeriodKind.custom => Period(PeriodKind.day, day, _addDays(day, 1)),
       PeriodKind.week => () {
-          final monday = _addDays(day, -(day.weekday - 1));
-          return Period(kind, monday, _addDays(monday, 7));
-        }(),
+        final monday = _addDays(day, -(day.weekday - 1));
+        return Period(kind, monday, _addDays(monday, 7));
+      }(),
       PeriodKind.month => Period(kind, DateTime(d.year, d.month), DateTime(d.year, d.month + 1)),
       PeriodKind.year => Period(kind, DateTime(d.year), DateTime(d.year + 1)),
     };
   }
 
   /// [first] and [last] are both included.
-  factory Period.custom(DateTime first, DateTime last) =>
-      Period(PeriodKind.custom, DateTime(first.year, first.month, first.day), _addDays(DateTime(last.year, last.month, last.day), 1));
+  factory Period.custom(DateTime first, DateTime last) => Period(
+    PeriodKind.custom,
+    DateTime(first.year, first.month, first.day),
+    _addDays(DateTime(last.year, last.month, last.day), 1),
+  );
 
   /// The previous (-1) or next (+1) period of the same kind.
   Period shift(int n) => switch (kind) {
-        PeriodKind.day => Period(kind, _addDays(start, n), _addDays(end, n)),
-        PeriodKind.week => Period(kind, _addDays(start, 7 * n), _addDays(end, 7 * n)),
-        PeriodKind.month => Period(kind, DateTime(start.year, start.month + n), DateTime(start.year, start.month + n + 1)),
-        PeriodKind.year => Period(kind, DateTime(start.year + n), DateTime(start.year + n + 1)),
-        PeriodKind.custom => () {
-            final days = end.difference(start).inDays;
-            return Period(kind, _addDays(start, days * n), _addDays(end, days * n));
-          }(),
-      };
+    PeriodKind.day => Period(kind, _addDays(start, n), _addDays(end, n)),
+    PeriodKind.week => Period(kind, _addDays(start, 7 * n), _addDays(end, 7 * n)),
+    PeriodKind.month => Period(kind, DateTime(start.year, start.month + n), DateTime(start.year, start.month + n + 1)),
+    PeriodKind.year => Period(kind, DateTime(start.year + n), DateTime(start.year + n + 1)),
+    PeriodKind.custom => () {
+      final days = end.difference(start).inDays;
+      return Period(kind, _addDays(start, days * n), _addDays(end, days * n));
+    }(),
+  };
 
   bool contains(DateTime t) => !t.isBefore(start) && t.isBefore(end);
 
@@ -49,34 +52,39 @@ class Period {
       PeriodKind.week => '${start.day} ${_mo[start.month - 1]} – ${last.day} ${_mo[last.month - 1]} ${last.year}',
       PeriodKind.month => '${_moLong[start.month - 1]} ${start.year}',
       PeriodKind.year => '${start.year}',
-      PeriodKind.custom => '${start.day} ${_mo[start.month - 1]} ${start.year} – ${last.day} ${_mo[last.month - 1]} ${last.year}',
+      PeriodKind.custom =>
+        '${start.day} ${_mo[start.month - 1]} ${start.year} – ${last.day} ${_mo[last.month - 1]} ${last.year}',
     };
   }
 
-  /// Bars for the trend chart: the days of this week for a day, the weeks of
-  /// this month for a week, the last 6 months for a month, the months of a year.
+  /// Points for the trend chart: the days of the week for a day or a week,
+  /// the weeks of the month for a month, the months of a year.
   List<(String, Period)> trend() {
+    Period day(DateTime d) => Period(PeriodKind.day, d, _addDays(d, 1));
     switch (kind) {
-      case PeriodKind.day:
+      case PeriodKind.day || PeriodKind.week:
         final week = Period.containing(PeriodKind.week, start);
-        return [for (var i = 0; i < 7; i++) (_wd[i].substring(0, 1), Period(PeriodKind.day, _addDays(week.start, i), _addDays(week.start, i + 1)))];
-      case PeriodKind.week:
-        final month = Period.containing(PeriodKind.month, start);
+        return [for (var i = 0; i < 7; i++) ('${_wd[i]} ${_addDays(week.start, i).day}', day(_addDays(week.start, i)))];
+      case PeriodKind.month:
         final out = <(String, Period)>[];
-        var w = Period.containing(PeriodKind.week, month.start);
-        while (w.start.isBefore(month.end)) {
-          out.add(('${w.start.day}/${w.start.month}', w));
+        var w = Period.containing(PeriodKind.week, start);
+        while (w.start.isBefore(end)) {
+          out.add(('${w.start.day} ${_mo[w.start.month - 1]}', w));
           w = w.shift(1);
         }
         return out;
-      case PeriodKind.month:
-        return [for (var i = 5; i >= 0; i--) (_mo[shift(-i).start.month - 1], shift(-i))];
       case PeriodKind.year:
-        return [for (var m = 1; m <= 12; m++) (_mo[m - 1].substring(0, 1), Period(PeriodKind.month, DateTime(start.year, m), DateTime(start.year, m + 1)))];
+        return [
+          for (var m = 1; m <= 12; m++)
+            (_mo[m - 1], Period(PeriodKind.month, DateTime(start.year, m), DateTime(start.year, m + 1))),
+        ];
       case PeriodKind.custom:
         final days = end.difference(start).inDays;
-        if (days <= 31) {
-          return [for (var i = 0; i < days; i++) ('${_addDays(start, i).day}', Period(PeriodKind.day, _addDays(start, i), _addDays(start, i + 1)))];
+        if (days <= 92) {
+          return [
+            for (var i = 0; i < days; i++)
+              ('${_addDays(start, i).day} ${_mo[_addDays(start, i).month - 1]}', day(_addDays(start, i))),
+          ];
         }
         final out = <(String, Period)>[];
         var m = Period.containing(PeriodKind.month, start);
@@ -94,8 +102,18 @@ class Period {
   static const _wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   static const _moLong = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 }
 
@@ -213,12 +231,8 @@ class Report {
       }
       byAccount.add(AccountSummary(p, totalsFor(own, period, {p}), closing));
     }
-    return Report._(
-      period,
-      account,
-      totalsFor(txs, period, scope),
-      byAccount,
-      [for (final (label, p) in period.trend()) (label, totalsFor(txs, p, scope))],
-    );
+    return Report._(period, account, totalsFor(txs, period, scope), byAccount, [
+      for (final (label, p) in period.trend()) (label, totalsFor(txs, p, scope)),
+    ]);
   }
 }

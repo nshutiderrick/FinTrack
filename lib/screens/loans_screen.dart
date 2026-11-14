@@ -125,7 +125,7 @@ class _LoanList extends StatelessWidget {
     if (loans.isEmpty && unlinked.isEmpty) {
       return Padding(padding: const EdgeInsets.all(32), child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: muted)));
     }
-    return ListView(padding: const EdgeInsets.only(bottom: 96), children: [
+    return ListView(padding: const EdgeInsets.only(bottom: 120), children: [
       for (final l in open) _LoanTile(l),
       if (closed.isNotEmpty) ...[
         Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 4), child: Text('Closed', style: TextStyle(color: muted))),

@@ -10,6 +10,9 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -187,6 +190,27 @@ object Popup {
         windowManager(c).addView(v, lp)
         view = v
         e.lifecycleChannel.appIsResumed()
+        buzz(c)
+    }
+
+    /** A short double buzz as the card appears. */
+    private fun buzz(c: Context) {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= 31) {
+                (c.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+            } else {
+                @Suppress("DEPRECATION") c.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            if (!vibrator.hasVibrator()) return
+            val pattern = longArrayOf(0, 120, 80, 120)
+            if (Build.VERSION.SDK_INT >= 26) {
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                @Suppress("DEPRECATION") vibrator.vibrate(pattern, -1)
+            }
+        } catch (t: Throwable) {
+            Log.w("Popup", "vibrate failed", t)
+        }
     }
 
     private fun statusBarHeight(c: Context): Int {

@@ -54,19 +54,21 @@ class _PopupSettingsTileState extends State<PopupSettingsTile> with WidgetsBindi
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Column(children: [
-      SwitchListTile(
-        title: const Text('Category pop-up'),
-        subtitle: const Text('When a payment arrives, a small card floats over any app so you can pick its category.'),
-        value: _on,
-        onChanged: _set,
-      ),
-      if (_on && !_overlay)
-        ListTile(
-          title: const Text('Allow "Display over other apps"'),
-          subtitle: Text('Until then you get a notification with 2 categories and More instead.', style: TextStyle(color: muted)),
-          trailing: TextButton(onPressed: widget.channel.openOverlaySettings, child: const Text('Allow')),
+    return Column(
+      children: [
+        SwitchListTile(
+          title: const Text('Category pop-up'),
+          subtitle: const Text('Pick a category as a payment arrives'),
+          value: _on,
+          onChanged: _set,
         ),
-    ]);
+        if (_on && !_overlay)
+          ListTile(
+            title: const Text('Allow "Display over other apps"'),
+            subtitle: Text('Until then it comes as a notification', style: TextStyle(color: muted)),
+            trailing: TextButton(onPressed: widget.channel.openOverlaySettings, child: const Text('Allow')),
+          ),
+      ],
+    );
   }
 }

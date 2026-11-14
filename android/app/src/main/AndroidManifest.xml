@@ -2,6 +2,8 @@
     <!-- The floating category pop-up, and its notification fallback. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- A short buzz when the category pop-up appears. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

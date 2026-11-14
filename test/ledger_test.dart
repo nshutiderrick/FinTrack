@@ -202,14 +202,18 @@ void main() {
       expect(w.shift(-1).start, DateTime(2026, 11, 2));
     });
 
-    test('trend bars: days of the week, last 6 months, months of the year', () {
+    test('trend points: days of the week, weeks of the month, months of the year', () {
       expect(Period.containing(PeriodKind.day, t0).trend(), hasLength(7));
-      final months = Period.containing(PeriodKind.month, t0).trend();
-      expect(months, hasLength(6));
-      expect(months.last.$2.start, DateTime(2026, 11));
-      expect(months.first.$2.start, DateTime(2026, 6));
+      // November 2026 starts on a Sunday: its weeks start 26 Oct ... 30 Nov.
+      final weeks = Period.containing(PeriodKind.month, t0).trend();
+      expect(weeks, hasLength(6));
+      expect(weeks.first.$2.start, DateTime(2026, 10, 26));
+      expect(weeks.last.$2.start, DateTime(2026, 11, 30));
+      expect(weeks.first.$1, '26 Oct');
       expect(Period.containing(PeriodKind.year, t0).trend(), hasLength(12));
-      expect(Period.containing(PeriodKind.week, t0).trend().first.$2.start, DateTime(2026, 10, 26));
+      final week = Period.containing(PeriodKind.week, t0).trend();
+      expect(week, hasLength(7));
+      expect(week.first.$2.start, DateTime(2026, 11, 9)); // Monday of t0's week
     });
 
     test('custom range includes both ends', () {

@@ -25,7 +25,7 @@ class AlertListenerService : NotificationListenerService() {
         if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
         val alert = extract(sbn) ?: return
         if (!Alerts.isRelevant(alert)) return
-        if (Alerts.captureOn(this)) Alerts.capture(this, alert)
+        if (Alerts.captureOn(this) && Alerts.isTransaction(alert)) Alerts.capture(this, alert)
         Alerts.log(this, alert)
         Alerts.remember(this, alert)
         Alerts.emit(alert)
@@ -64,6 +64,18 @@ object Alerts {
         a.getString("title") in senders ||
             a.getString("package").contains("equity", ignoreCase = true) ||
             mentionsRwf.containsMatchIn(a.getString("text"))
+
+    private val amount = Regex("""(?i)\b(RWF|Frw|USD|EUR)\s*\d|\d[\d,.]*\s*(RWF|Frw)\b""")
+    private val moneyWords = Regex(
+        """(?i)\b(received|sent|transferred|payment|paid|withdrawn|withdrawal|deposit(ed)?|credited|debited|""" +
+            """auth|purchase|reversal|balance|fee|charges?|txid|tid|ft id|kohereza|wakiriye|usigaranye|igiciro)\b"""
+    )
+
+    /** For the capture file: only money movements (an amount and a money word), not promotions or OTPs. */
+    fun isTransaction(a: JSONObject): Boolean {
+        val text = a.getString("text")
+        return amount.containsMatchIn(text) && moneyWords.containsMatchIn(text)
+    }
 
     // On by default in the capture app, off in the daily app (see build.gradle.kts flavors).
     fun captureOn(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

@@ -28,7 +28,7 @@ class SubscriptionsScreen extends StatelessWidget {
         label: const Text('Add subscription'),
       ),
       // The second tab of Dues, which has the page title.
-      body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
+      body: ListView(padding: const EdgeInsets.only(bottom: 120), children: [
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

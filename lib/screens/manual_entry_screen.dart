@@ -27,6 +27,26 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   String? _category;
   final _amount = TextEditingController();
   final _description = TextEditingController();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _fee = TextEditingController();
+  final _reference = TextEditingController();
+
+  @override
+  void dispose() {
+    for (final c in [_amount, _description, _name, _phone, _fee, _reference]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Optional; blank is no fee. Null when something unreadable was typed.
+  int? get _feeMinor {
+    final s = _fee.text.replaceAll(RegExp(r'[ ,]'), '');
+    if (s.isEmpty) return 0;
+    final v = int.tryParse(s);
+    return v == null || v < 0 ? null : v * 100;
+  }
 
   @override
   void initState() {
@@ -40,7 +60,12 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   }
 
   Future<void> _pickTime() async {
-    final d = await showDatePicker(context: context, initialDate: _time, firstDate: DateTime(2020), lastDate: DateTime.now());
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _time,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
     if (d == null || !mounted) return;
     final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_time));
     setState(() => _time = DateTime(d.year, d.month, d.day, t?.hour ?? _time.hour, t?.minute ?? _time.minute));
@@ -54,6 +79,10 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
       time: _time,
       category: _category!,
       description: _description.text,
+      name: _name.text,
+      phone: _phone.text,
+      fee: _feeMinor!,
+      reference: _reference.text,
     );
     Navigator.of(context).pop(true);
   }
@@ -62,7 +91,16 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   Widget build(BuildContext context) {
     final ledger = LedgerScope.of(context);
     final categories = _income ? ledger.incomeCategories : ledger.expenseCategories;
-    final canSave = _minor != null && _category != null;
+    final canSave = _minor != null && _category != null && _feeMinor != null;
+    Widget field(TextEditingController c, String label, {TextInputType? keyboard, String? error}) => Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: TextField(
+        controller: c,
+        keyboardType: keyboard,
+        decoration: InputDecoration(labelText: label, errorText: error, border: const OutlineInputBorder()),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Add entry')),
       body: ListView(
@@ -97,15 +135,18 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
           const SizedBox(height: 16),
           Text('Account', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          Wrap(spacing: 8, children: [
-            for (final p in Provider.values)
-              ChoiceChip(
-                label: Text(p.short),
-                selected: _account == p,
-                showCheckmark: false,
-                onSelected: (_) => setState(() => _account = p),
-              ),
-          ]),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final p in Provider.values)
+                ChoiceChip(
+                  label: Text(p.short),
+                  selected: _account == p,
+                  showCheckmark: false,
+                  onSelected: (_) => setState(() => _account = p),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -115,19 +156,41 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
           ),
           Text('Category', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final c in categories)
-              ChoiceChip(
-                label: Text(c),
-                selected: _category == c,
-                showCheckmark: false,
-                onSelected: (_) => setState(() => _category = c),
-              ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final c in categories)
+                ChoiceChip(
+                  label: Text(c),
+                  selected: _category == c,
+                  showCheckmark: false,
+                  onSelected: (_) => setState(() => _category = c),
+                ),
+            ],
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _description,
             decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+          ),
+          field(_name, _income ? 'From (name, optional)' : 'To (name, optional)'),
+          field(_phone, 'Phone number (optional)', keyboard: TextInputType.phone),
+          field(
+            _fee,
+            'Fee (RWF, optional)',
+            keyboard: TextInputType.number,
+            error: _feeMinor == null ? 'Enter a number' : null,
+          ),
+          field(_reference, 'Reference number (optional)'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              _account == Provider.cash
+                  ? 'The amount and fee change your cash balance.'
+                  : 'The amount and fee change the ${_account.label} balance until the next alert shows it.',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+            ),
           ),
           const SizedBox(height: 24),
           FilledButton(onPressed: canSave ? _save : null, child: const Text('Save')),

@@ -85,7 +85,7 @@ class _MismatchesTab extends StatelessWidget {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     return RefreshIndicator(
       onRefresh: c.refresh,
-      child: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
+      child: ListView(padding: const EdgeInsets.only(bottom: 120), children: [
         if (!c.loaded)
           const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
         else if (mismatches.isEmpty)
@@ -127,7 +127,7 @@ class _NeedsReviewTab extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: c.refresh,
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 120),
         children: [
           for (final name in c.suggestedNames)
             Card(

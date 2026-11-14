@@ -77,12 +77,15 @@ class TxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurfaceVariant;
     final m = tx.m;
     final sign = m.direction == Direction.inflow ? 1 : -1;
+    // Deep black in light mode, deep white in dark mode.
+    final amountStyle = TextStyle(
+        color: scheme.onSurface, fontWeight: FontWeight.w700, decoration: tx.cancelled ? TextDecoration.lineThrough : null);
+    // Line 1: account and date. Line 2: the category and other tags.
     final tags = <String>[
-      tx.provider.short,
-      dateLabel(tx.time),
       // A category only means something for spending and income (not transfers or loans).
       if ((tx.isExpense || tx.isIncome) && !tx.isLoan) ?tx.category,
       if (tx.needsCategory) 'Pending',
@@ -97,20 +100,20 @@ class TxTile extends StatelessWidget {
     final row = ListTile(
       onTap: onTap ?? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TxDetailScreen(tx.id))),
       title: Text(tx.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(tags.join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        '${tx.provider.short} · ${dateLabel(tx.time)}${tags.isEmpty ? '' : '\n${tags.join(' · ')}'}',
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
+      isThreeLine: tags.isNotEmpty,
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (foreign && tx.approximate)
-            Text('${sign < 0 ? '- ' : '+ '}${m.currency} ${(m.amount / 100).toStringAsFixed(2)}',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, decoration: tx.cancelled ? TextDecoration.lineThrough : null))
+            Text('${sign < 0 ? '- ' : '+ '}${m.currency} ${(m.amount / 100).toStringAsFixed(2)}', style: amountStyle)
           else
-            Amount(sign * tx.rwf,
-                signed: true,
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, decoration: tx.cancelled ? TextDecoration.lineThrough : null)),
+            Amount(sign * tx.rwf, signed: true, style: amountStyle),
           if (m.fee > 0) Text('fee ${formatRwf(m.fee, hidden: SettingsScope.of(context).hideAmounts)}',
               style: TextStyle(color: muted, fontSize: 12)),
           if (foreign && !tx.approximate)

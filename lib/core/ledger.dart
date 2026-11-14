@@ -195,6 +195,8 @@ class Ledger {
     final matched = matcher.match(messages);
     final tracker = BalanceTracker();
     starting.forEach(tracker.setStarting);
+    // Cash has no alerts: its balance is the sum of the entries added by hand.
+    if (!starting.containsKey(Provider.cash)) tracker.setStarting(Provider.cash, 0);
 
     final txs = <Tx>[];
     final mismatches = <Mismatch>[];
@@ -218,7 +220,7 @@ class Ledger {
           case null:
         }
       }
-      if (tracker.lastShowedBalance) {
+      if (tracker.lastShowedBalance || (t.message.provider == Provider.cash && t.movesMoney)) {
         lastReal[t.message.provider] = t.message.time;
       } else if (t.message.balance != null) {
         tx.balanceNotShown = true; // Equity's placeholder 0
