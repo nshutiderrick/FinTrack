@@ -11,10 +11,12 @@ import 'amount.dart';
 /// What the notifications page lists, for the badge and the page itself.
 List<Notice> noticesOf(BuildContext context) {
   final c = LedgerScope.of(context);
+  final (mismatches, pending, unknown) = visibleReview(c.ledger, SettingsScope.of(context));
   return buildNotices(
     subs: c.subscriptions,
     loans: c.loans,
-    reviewCount: visibleReviewCount(c.ledger, SettingsScope.of(context)),
+    pending: [...pending, ...unknown],
+    mismatches: mismatches,
     now: DateTime.now(),
   );
 }
@@ -54,9 +56,10 @@ class NotificationsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final n = noticesOf(context).length;
+    final read = SettingsScope.of(context).readNotices;
+    final n = noticesOf(context).where((x) => !read.contains(x.id)).length;
     return IconButton(
-      tooltip: n == 0 ? 'Notifications' : '$n notifications',
+      tooltip: n == 0 ? 'Notifications' : '$n unread notifications',
       icon: Badge.count(count: n, isLabelVisible: n > 0, child: const Icon(Icons.notifications_outlined)),
       onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
     );

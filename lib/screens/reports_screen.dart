@@ -59,111 +59,109 @@ class _ReportsScreenState extends State<ReportsScreen> {
       PeriodKind.custom: 'Custom range…',
     };
 
-    return GlassBackdrop(
-      child: Column(
-        children: [
-          const PageHeader('Reports'),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-              children: [
-                // Period and account as drop-downs; the arrows below step through periods.
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<PeriodKind>(
-                        key: ValueKey(_period.kind),
-                        initialValue: _period.kind,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Period',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [for (final e in kinds.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
-                        onChanged: (k) {
-                          if (k != null) _setKind(k);
-                        },
+    return Column(
+      children: [
+        const PageHeader('Reports'),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+            children: [
+              // Period and account as drop-downs; the arrows below step through periods.
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<PeriodKind>(
+                      key: ValueKey(_period.kind),
+                      initialValue: _period.kind,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Period',
+                        isDense: true,
+                        border: OutlineInputBorder(),
                       ),
+                      items: [for (final e in kinds.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                      onChanged: (k) {
+                        if (k != null) _setKind(k);
+                      },
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<Provider?>(
-                        key: ValueKey(account),
-                        initialValue: account,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Account',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text(settings.hidden.isEmpty ? 'All accounts' : 'All shown'),
-                          ),
-                          for (final p in settings.visibleAccounts) DropdownMenuItem(value: p, child: Text(p.short)),
-                        ],
-                        onChanged: (p) => settings.account = p,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Previous',
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: () => setState(() => _period = _period.shift(-1)),
-                    ),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _period.kind == PeriodKind.custom ? () => _setKind(PeriodKind.custom) : null,
-                        child: Text(_period.label, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Next',
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: isFuture ? null : () => setState(() => _period = _period.shift(1)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _TotalsCard(t, oneAccount: account != null || settings.hidden.isNotEmpty),
-                const SizedBox(height: 16),
-                _section(context, 'Top spending'),
-                _CategoryList(t.topSpending, total: t.spent, empty: 'No confirmed spending in this period.'),
-                const SizedBox(height: 16),
-                _section(context, 'Top income'),
-                _CategoryList(t.topIncome, total: t.income, empty: 'No confirmed income in this period.'),
-                const SizedBox(height: 16),
-                _section(context, 'Trend'),
-                // A new period starts with nothing picked.
-                _TrendChart(report.trend, key: ValueKey('${_period.label} $account')),
-                const SizedBox(height: 16),
-                _section(context, 'By account'),
-                Card(
-                  child: Column(
-                    children: [
-                      if (report.byAccount.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text('Nothing yet.', style: TextStyle(color: muted)),
-                        ),
-                      for (final (i, a) in report.byAccount.indexed) ...[
-                        if (i > 0) const Divider(height: 1),
-                        _AccountRow(a),
-                      ],
-                    ],
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<Provider?>(
+                      key: ValueKey(account),
+                      initialValue: account,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Account',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text(settings.hidden.isEmpty ? 'All accounts' : 'All shown'),
+                        ),
+                        for (final p in settings.visibleAccounts) DropdownMenuItem(value: p, child: Text(p.short)),
+                      ],
+                      onChanged: (p) => settings.account = p,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Previous',
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => setState(() => _period = _period.shift(-1)),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: _period.kind == PeriodKind.custom ? () => _setKind(PeriodKind.custom) : null,
+                      child: Text(_period.label, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Next',
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: isFuture ? null : () => setState(() => _period = _period.shift(1)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _TotalsCard(t, oneAccount: account != null || settings.hidden.isNotEmpty),
+              const SizedBox(height: 16),
+              _section(context, 'Top spending'),
+              _CategoryList(t.topSpending, total: t.spent, empty: 'No confirmed spending in this period.'),
+              const SizedBox(height: 16),
+              _section(context, 'Top income'),
+              _CategoryList(t.topIncome, total: t.income, empty: 'No confirmed income in this period.'),
+              const SizedBox(height: 16),
+              _section(context, 'Trend'),
+              // A new period starts with nothing picked.
+              _TrendChart(report.trend, key: ValueKey('${_period.label} $account')),
+              const SizedBox(height: 16),
+              _section(context, 'By account'),
+              Card(
+                child: Column(
+                  children: [
+                    if (report.byAccount.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text('Nothing yet.', style: TextStyle(color: muted)),
+                      ),
+                    for (final (i, a) in report.byAccount.indexed) ...[
+                      if (i > 0) const Divider(height: 1),
+                      _AccountRow(a),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -60,8 +60,8 @@ class ExpenseTrackerApp extends StatelessWidget {
         builder: (context, _) => MaterialApp(
           title: 'FinTrack',
           debugShowCheckedModeBanner: false,
-          theme: buildTheme(Brightness.light),
-          darkTheme: buildTheme(Brightness.dark),
+          theme: withBackdrop(buildTheme(Brightness.light)),
+          darkTheme: withBackdrop(buildTheme(Brightness.dark)),
           themeMode: settings.themeMode,
           home: home,
           builder: (context, child) => ledger?.call(child!) ?? LedgerHost(store: MemoryLedgerStore(), child: child!),
@@ -132,6 +132,8 @@ class _ShellState extends State<Shell> {
           child: Glass(
             radius: 32,
             opacity: 0.6,
+            // Dark mode has a light edge; light mode gets a dark one.
+            edge: scheme.brightness == Brightness.light ? Colors.black : null,
             child: NavigationBar(
               height: 68,
               backgroundColor: Colors.transparent,
@@ -149,7 +151,6 @@ class _ShellState extends State<Shell> {
           ),
         ),
       ),
-      backgroundColor: scheme.surface,
     );
   }
 }

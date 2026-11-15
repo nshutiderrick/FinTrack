@@ -205,19 +205,40 @@ void main() {
   });
 
   group('Notices', () {
-    test('a subscription running out soon and an overdue loan are listed, review first', () {
+    test('pending first, then a loan overdue and a subscription on its reminder day', () {
       final now = DateTime(2026, 11, 14, 12);
       final subs = SubscriptionBook.build(const [], [
+        // Runs out tomorrow: the day-before reminder (today 9:00) has come.
         SubRecord(id: 's', name: 'Gym', key: '', cycle: Cycle.monthly, status: SubStatus.active, firstRenewal: DateTime(2026, 11, 15)),
-        SubRecord(id: 'f', name: 'Far', key: '', cycle: Cycle.yearly, status: SubStatus.active, firstRenewal: DateTime(2027, 6, 1)),
+        // 20 days away, paid one month: no reminder day yet, so not listed.
+        SubRecord(id: 'm', name: 'Music', key: '', cycle: Cycle.monthly, status: SubStatus.active,
+            firstRenewal: DateTime(2026, 12, 4), paidFrom: DateTime(2026, 11, 4)),
       ]);
       final loans = LoanBook.build(const [], [
         LoanRecord(id: 'l', side: LoanSide.owedToMe, person: 'Friend One', amount: 500000, createdAt: DateTime(2026, 10, 1), due: DateTime(2026, 11, 10)),
       ]);
-      final n = buildNotices(subs: subs, loans: loans, reviewCount: 2, now: now);
-      expect(n.map((x) => x.title), ['Review', 'Friend One owes you', 'Gym']);
+      final pending = txs([rec(msg(Provider.mtn, Kind.expense, Direction.outflow, 3000, who: 'Shop'))]);
+      final n = buildNotices(subs: subs, loans: loans, pending: pending, mismatches: const [], now: now);
+      expect(n.map((x) => x.title), ['Pending transactions', 'Friend One owes you', 'Gym']);
       expect(n.last.body, 'Runs out tomorrow.');
       expect(n[1].body, 'Was due 4 days ago.');
+
+      // The same things give the same ids, so a read notice stays read.
+      final again = buildNotices(subs: subs, loans: loans, pending: pending, mismatches: const [], now: now);
+      expect(again.map((x) => x.id), n.map((x) => x.id));
+    });
+
+    test('a three-month subscription shows up from a month before it runs out', () {
+      final subs = SubscriptionBook.build(const [], [
+        SubRecord(id: 'q', name: 'Gym', key: '', cycle: Cycle.monthly, status: SubStatus.active,
+            firstRenewal: DateTime(2026, 12, 4), paidFrom: DateTime(2026, 9, 4)),
+      ]);
+      List<Notice> at(DateTime now) =>
+          buildNotices(subs: subs, loans: LoanBook.build(const [], const []), pending: const [], mismatches: const [], now: now);
+      expect(at(DateTime(2026, 11, 3, 12)), isEmpty);
+      final month = at(DateTime(2026, 11, 14, 12)).single;
+      final day = at(DateTime(2026, 12, 3, 12)).single;
+      expect(day.id, isNot(month.id)); // the day-before reminder is new, unread again
     });
   });
 

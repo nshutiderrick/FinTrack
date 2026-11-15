@@ -22,6 +22,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final Set<String> _groups = {};
   String _search = '';
 
+  /// Shows only moves between my own accounts, which the main list leaves
+  /// out so they do not swell the money in and out.
+  bool _between = false;
+
   Future<void> _pickCategories(List<String> all) async {
     final picked = await showModalBottomSheet<Set<String>>(
       context: context,
@@ -85,7 +89,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final account = settings.account;
     bool inView(Provider p) => account == null ? settings.isVisible(p) : p == account;
 
-    final base = c.ledger.txs.where((t) => inView(t.provider));
+    final base = c.ledger.txs.where((t) => inView(t.provider) && (t.kind == Kind.transfer) == _between);
     final all = groupsIn(base, [
       ...c.expenseCategories,
       ...c.incomeCategories.where((x) => !c.expenseCategories.contains(x)),
@@ -130,7 +134,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${list.length} transaction${list.length == 1 ? '' : 's'}',
+              _between
+                  ? '${list.length} move${list.length == 1 ? '' : 's'} between my accounts'
+                  : '${list.length} transaction${list.length == 1 ? '' : 's'}',
               style: theme.textTheme.titleSmall?.copyWith(color: muted),
             ),
             const SizedBox(height: 12),
@@ -166,7 +172,40 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 onChanged: (v) => setState(() => _search = v),
               ),
             ),
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: AccountFilterBar()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<Provider?>(
+                      key: ValueKey(account),
+                      initialValue: account,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Account',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text(settings.hidden.isEmpty ? 'All accounts' : 'All shown'),
+                        ),
+                        for (final p in settings.visibleAccounts) DropdownMenuItem(value: p, child: Text(p.short)),
+                      ],
+                      onChanged: (p) => settings.account = p,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Between my accounts'),
+                    selected: _between,
+                    showCheckmark: false,
+                    onSelected: (v) => setState(() => _between = v),
+                  ),
+                ],
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
@@ -208,7 +247,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             Expanded(
               child: list.isEmpty
                   ? Center(
-                      child: Text('Nothing matches.', style: TextStyle(color: muted)),
+                      child: Text(
+                        _between ? 'No moves between your accounts.' : 'Nothing matches.',
+                        style: TextStyle(color: muted),
+                      ),
                     )
                   // The count and totals are the first item, so they scroll away with the list.
                   : ListView.builder(

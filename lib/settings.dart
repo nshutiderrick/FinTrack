@@ -6,9 +6,9 @@ import 'core/models.dart';
 /// User preferences that change how the whole app looks. Saved on the phone.
 class AppSettings extends ChangeNotifier {
   AppSettings(this._prefs)
-      : _themeMode = ThemeMode.values.asNameMap()[_prefs.getString(_themeKey)] ?? ThemeMode.system,
-        _hideAmounts = _prefs.getBool(_hideKey) ?? false,
-        _account = Provider.values.asNameMap()[_prefs.getString(_accountKey)];
+    : _themeMode = ThemeMode.values.asNameMap()[_prefs.getString(_themeKey)] ?? ThemeMode.system,
+      _hideAmounts = _prefs.getBool(_hideKey) ?? false,
+      _account = Provider.values.asNameMap()[_prefs.getString(_accountKey)];
 
   static const _themeKey = 'themeMode', _hideKey = 'hideAmounts', _accountKey = 'accountFilter';
 
@@ -29,8 +29,8 @@ class AppSettings extends ChangeNotifier {
   /// balances, matching), but every total, list and chart leaves them out
   /// until I turn them back on.
   Set<Provider> get hidden => {
-        for (final n in _prefs.getStringList(_hiddenKey) ?? const <String>[]) ?Provider.values.asNameMap()[n],
-      };
+    for (final n in _prefs.getStringList(_hiddenKey) ?? const <String>[]) ?Provider.values.asNameMap()[n],
+  };
 
   bool isVisible(Provider p) => !hidden.contains(p);
   List<Provider> get visibleAccounts => Provider.values.where(isVisible).toList();
@@ -39,6 +39,18 @@ class AppSettings extends ChangeNotifier {
     final h = hidden;
     visible ? h.remove(p) : h.add(p);
     _prefs.setStringList(_hiddenKey, [for (final x in h) x.name]);
+    notifyListeners();
+  }
+
+  static const _readKey = 'readNotices';
+
+  /// Notifications I marked as read (ids from [Notice.id]).
+  Set<String> get readNotices => {...?_prefs.getStringList(_readKey)};
+
+  /// Marks [id] read. Only ids still in [current] are kept, so the list stays small.
+  void markNoticeRead(String id, Iterable<String> current) {
+    final keep = {...readNotices.where(current.contains), id};
+    _prefs.setStringList(_readKey, keep.toList());
     notifyListeners();
   }
 
@@ -69,6 +81,5 @@ class AppSettings extends ChangeNotifier {
 class SettingsScope extends InheritedNotifier<AppSettings> {
   const SettingsScope({super.key, required AppSettings settings, required super.child}) : super(notifier: settings);
 
-  static AppSettings of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<SettingsScope>()!.notifier!;
+  static AppSettings of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<SettingsScope>()!.notifier!;
 }
